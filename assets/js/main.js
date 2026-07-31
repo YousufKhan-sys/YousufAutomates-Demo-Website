@@ -27,17 +27,57 @@
   }
 
   // ------------------------------------------------------------
-  // Home page: lead capture form -> generate_lead -> /thank-you
+  // Home page: lead capture form -> Web3Forms -> generate_lead -> /thank-you
   // ------------------------------------------------------------
   var leadForm = document.getElementById("lead-form");
   if (leadForm) {
+    var leadStatus = document.getElementById("lead-form-status");
+    var leadBtn = leadForm.querySelector("button[type='submit']");
+
+    function showLeadError(message) {
+      if (!leadStatus) {
+        alert(message);
+        return;
+      }
+      leadStatus.textContent = message;
+      leadStatus.classList.add("is-error");
+      leadStatus.setAttribute("aria-hidden", "false");
+    }
+
     leadForm.addEventListener("submit", function (e) {
       e.preventDefault();
-      track("generate_lead", {
-        method: "AI Automation Checklist Download",
-        form_location: "homepage",
-      });
-      redirect(leadForm.getAttribute("data-thank-you") || "thank-you/");
+      if (leadStatus) {
+        leadStatus.textContent = "";
+        leadStatus.classList.remove("is-error");
+      }
+      if (leadBtn) leadBtn.disabled = true;
+      fetch(leadForm.action, {
+        method: "POST",
+        body: new FormData(leadForm),
+        headers: { "Accept": "application/json" },
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data && data.success) {
+            track("generate_lead", {
+              method: "AI Automation Checklist Download",
+              form_location: "homepage",
+            });
+            redirect(leadForm.getAttribute("data-thank-you") || "thank-you/");
+          } else {
+            showLeadError(
+              (data && data.message) ||
+                "There was a problem sending your message. Please try again."
+            );
+            if (leadBtn) leadBtn.disabled = false;
+          }
+        })
+        .catch(function () {
+          showLeadError(
+            "Network error. Please check your connection and try again."
+          );
+          if (leadBtn) leadBtn.disabled = false;
+        });
     });
   }
 
