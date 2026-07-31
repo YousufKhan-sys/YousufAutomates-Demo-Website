@@ -1,0 +1,7 @@
+# robots.txt - AI Automation for Businesses
+# Allow all crawlers and point search engines to the sitemap.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://www.yourdomain.com/sitemap.xml
