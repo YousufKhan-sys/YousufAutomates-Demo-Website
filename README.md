@@ -1,0 +1,2 @@
+# First VibeCoded Website
+
