@@ -42,18 +42,58 @@
   }
 
   // ------------------------------------------------------------
-  // Contact page: contact form -> contact_form_submit -> /thank-you
+  // Contact page: contact form -> Web3Forms -> contact_form_submit -> /thank-you
   // ------------------------------------------------------------
   var contactForm = document.getElementById("contact-form");
   if (contactForm) {
+    var statusEl = document.getElementById("form-status");
+    var submitBtn = contactForm.querySelector("button[type='submit']");
+
+    function showFormError(message) {
+      if (!statusEl) {
+        alert(message);
+        return;
+      }
+      statusEl.textContent = message;
+      statusEl.classList.add("is-error");
+      statusEl.setAttribute("aria-hidden", "false");
+    }
+
     contactForm.addEventListener("submit", function (e) {
       e.preventDefault();
       var automate = document.getElementById("automate-what");
-      track("contact_form_submit", {
-        form_location: "contact",
-        automate_what: automate ? automate.value : "",
-      });
-      redirect(contactForm.getAttribute("data-thank-you") || "thank-you/");
+      if (statusEl) {
+        statusEl.textContent = "";
+        statusEl.classList.remove("is-error");
+      }
+      if (submitBtn) submitBtn.disabled = true;
+      fetch(contactForm.action, {
+        method: "POST",
+        body: new FormData(contactForm),
+        headers: { "Accept": "application/json" },
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data && data.success) {
+            track("contact_form_submit", {
+              form_location: "contact",
+              automate_what: automate ? automate.value : "",
+            });
+            redirect(contactForm.getAttribute("data-thank-you") || "thank-you/");
+          } else {
+            showFormError(
+              (data && data.message) ||
+                "There was a problem sending your message. Please try again."
+            );
+            if (submitBtn) submitBtn.disabled = false;
+          }
+        })
+        .catch(function () {
+          showFormError(
+            "Network error. Please check your connection and try again."
+          );
+          if (submitBtn) submitBtn.disabled = false;
+        });
     });
   }
 
